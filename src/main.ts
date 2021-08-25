@@ -29,19 +29,26 @@ class Main {
 
          app.get('/buttons', async(req, res) => {
             res.type('json');
-            let result = await db.prepare("select * from button").all();
+            let result = await db.prepare("select * from button order by id").all();
+            res.send(result);
+        })
+
+        app.get('/scene/:sequence_id', async(req, res) => {
+            res.type('json');
+            let sid = parseInt(req.params.sequence_id);
+            let result = await db.prepare(`select * from scene where sequence_id = ? order by id`).all(sid);
             res.send(result);
         })
 
         app.get('/sequence', async(req, res) => {
             res.type('json');
-            let result = await db.prepare("select * from sequence").all();
+            let result = await db.prepare("select * from sequence order by id").all();
             res.send(result);
         })
 
         app.get('/lights', async(req, res) => {
             res.type('json');
-            let result = await db.prepare("select * from light").all();
+            let result = await db.prepare("select * from light order by id").all();
             res.send(result);
         })
 
