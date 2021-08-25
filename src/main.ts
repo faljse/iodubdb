@@ -33,6 +33,18 @@ class Main {
             res.send(result);
         })
 
+        app.get('/sequence', async(req, res) => {
+            res.type('json');
+            let result = await db.prepare("select * from sequence").all();
+            res.send(result);
+        })
+
+        app.get('/lights', async(req, res) => {
+            res.type('json');
+            let result = await db.prepare("select * from light").all();
+            res.send(result);
+        })
+
         app.post('/sendUDP', (req, res) => { 
             // let sendString = r.cmd.paddingLeft("    ")
             //     + "."+r.id.toString().paddingLeft("    ") 

@@ -33,22 +33,33 @@
       </tbody>
     </table>
   </script>
+
+
+  <!-- Modal Component -->
+<script type="text/x-template" id="cell-template">
+    <div>
+      <div v-show="edit == false">
+        <label @dblclick="editing"> {{ cell }}</label>
+      </div>
+      <input ref="cellinput" type="text" v-show="edit == true" v-model="cell" @focus="focused" @blur="edit = false" @keyup.enter="edit == false">
+    </div>
+  </script>
   
   <!-- root element -->
   <div id="demo">
-    <form id="search">
-      Search
-      <input name="query" v-model="searchQuery">
-    </form>
-    <button-grid :data="gridData" :columns="gridColumns" :filter-key="searchQuery" >
-    </button-grid>
+    <grid :data="lightData" :columns="lightColumns">
+    </grid>
+    <grid :data="gridData" :columns="gridColumns" :filter-key="searchQuery" >
+    </grid>
     <p>
       <em>[Double Click to edit the cell data]</em>
     </p>
     <div>
-      Pretty JSON
+      Code
       <pre v-html="exportCode(gridData)"></pre>
     </div>
+    <grid :data="sequenceData" :columns="sequenceColumns">
+    </grid>
   </div>
 
 <script>
@@ -85,7 +96,7 @@ Vue.component('cell-grid', {
   }
 })
 
-Vue.component('button-grid', {
+Vue.component('grid', {
   template: '#grid-template',
   props: {
     data: Array,
@@ -144,21 +155,23 @@ var demo = new Vue({
   data: {
     searchQuery: '',
     gridColumns: ['id', 'name', 'input'],
-    gridData: []
+    gridData: [],
+    sequenceColumns: ['id', 'name'],
+    sequenceData: [],
+    lightColumns: ['id', 'name'],
+    lightData: []
+
   },
   created () {
             this.fetchData()
   },  
   methods: {
-    fetchData() {
-                var self = this;
+    async fetchData() {
                 this.error = this.post = null
                 this.loading = true
-                // POST /users
-                fetchival('/buttons').get()
-                    .then(function(json) {
-                        self.gridData=json;
-                    })
+                this.gridData = await fetchival('/buttons').get();
+                this.sequenceData = await fetchival('/sequence').get();
+                this.lightData = await fetchival('/sequence').get();
             },
             
     exportCode: function(json) {
