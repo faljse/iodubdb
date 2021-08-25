@@ -1,0 +1,189 @@
+<html>
+<link rel="stylesheet" href="main.css"/>
+<script src="js/fetchival.js"></script> <!-- https://github.com/typicode/fetchival -->
+<script src="js/vue.js"></script>
+
+<!-- Cell Component -->
+<script type="text/x-template" id="cell-template">
+    <div>
+      <div v-show="edit == false">
+        <label @dblclick="editing"> {{ cell }}</label>
+      </div>
+      <input ref="cellinput" type="text" v-show="edit == true" v-model="cell" @focus="focused" @blur="edit = false" @keyup.enter="edit == false">
+    </div>
+  </script>
+  <!-- Grid Component -->
+  <script type="text/x-template" id="grid-template">
+    <table>
+      <thead>
+        <tr>
+          <th v-for="key in columns" @click="sortBy(key)" :class="{ active: sortKey == key }">
+            {{ key | capitalize }}
+            <span class="arrow" :class="sortOrders[key] > 0 ? 'asc' : 'dsc'">
+            </span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="entry in filteredData">
+          <td v-for="key in columns">
+            <cell-grid :entry="entry" :k="key"></cell-grid>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </script>
+  
+  <!-- root element -->
+  <div id="demo">
+    <form id="search">
+      Search
+      <input name="query" v-model="searchQuery">
+    </form>
+    <button-grid :data="gridData" :columns="gridColumns" :filter-key="searchQuery" >
+    </button-grid>
+    <p>
+      <em>[Double Click to edit the cell data]</em>
+    </p>
+    <div>
+      Pretty JSON
+      <pre v-html="exportCode(gridData)"></pre>
+    </div>
+  </div>
+
+<script>
+Vue.component('cell-grid', {
+  template: '#cell-template',
+  props: ['entry', 'k'],
+  data: function() {
+    return {
+      edit: false
+    }
+  },
+  computed: {
+    cell: {
+      get: function() {
+        console.log("get", this.entry[this.k])
+        return this.entry[this.k]
+      },
+      set: function(newCellValue) {
+        console.log("set", newCellValue)
+        this.$emit('input', isNaN(newCellValue) ? newCellValue : parseInt(newCellValue))
+      }
+    }
+  },
+  methods: {
+  focused: function() {
+    console.log('focused')
+  },
+   editing: function() {
+			this.edit = true;
+      this.$nextTick(function () {
+        this.$refs.cellinput.focus()
+      })
+   }
+  }
+})
+
+Vue.component('button-grid', {
+  template: '#grid-template',
+  props: {
+    data: Array,
+    columns: Array,
+    filterKey: String
+  },
+  data: function() {
+    var sortOrders = {}
+    this.columns.forEach(function(key) {
+      sortOrders[key] = 1
+    })
+    return {
+      sortKey: '',
+      sortOrders: sortOrders
+    }
+  },
+  computed: {
+    filteredData: function() {
+      var sortKey = this.sortKey
+      var filterKey = this.filterKey && this.filterKey.toLowerCase()
+      var order = this.sortOrders[sortKey] || 1
+      var data = this.data
+      if (filterKey) {
+        data = data.filter(function(row) {
+          return Object.keys(row).some(function(key) {
+            return String(row[key]).toLowerCase().indexOf(filterKey) > -1
+          })
+        })
+      }
+      if (sortKey) {
+        data = data.slice().sort(function(a, b) {
+          a = a[sortKey]
+          b = b[sortKey]
+          return (a === b ? 0 : a > b ? 1 : -1) * order
+        })
+      }
+      return data
+    }
+  },
+  filters: {
+    capitalize: function(str) {
+      return str.charAt(0).toUpperCase() + str.slice(1)
+    }
+  },
+  methods: {
+    sortBy: function(key) {
+      this.sortKey = key
+      this.sortOrders[key] = this.sortOrders[key] * -1
+    }
+  }
+})
+
+
+var demo = new Vue({
+  el: '#demo',
+  data: {
+    searchQuery: '',
+    gridColumns: ['id', 'name', 'input'],
+    gridData: []
+  },
+  created () {
+            this.fetchData()
+  },  
+  methods: {
+    fetchData() {
+                var self = this;
+                this.error = this.post = null
+                this.loading = true
+                // POST /users
+                fetchival('/buttons').get()
+                    .then(function(json) {
+                        self.gridData=json;
+                    })
+            },
+            
+    exportCode: function(json) {
+        let p=
+`struct Button{
+  uint8_t id;
+  uint8_t inputNr;
+};
+const Button buttons[] PROGMEM = {\n`;
+        json.forEach(function (value) {
+            console.log(value);
+            p+=`{ ${value.id}, ${value.input} },\n`
+        }); 
+        p+=`};\n\n`
+        p+=`for( const Foo &foo : bar ){
+    Serial.print( pgm_read_byte( &foo.a ) );
+    Serial.print( ", " );
+    Serial.println( pgm_read_word( &foo.b ) );
+}`
+        return p;
+    },
+  }
+})
+
+
+
+</script>
+</html>
