@@ -22,6 +22,8 @@
             <span class="arrow" :class="sortOrders[key] > 0 ? 'asc' : 'dsc'">
             </span>
           </th>
+          <th>
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -29,13 +31,22 @@
           <td v-for="key in columns">
             <label v-if="key=='id'" @click="openModal()"> <a href="#">{{ entry.id }}</a></label>
             <cell-grid v-else :entry="entry" :k="key"></cell-grid>
-
           </td>
+          <td>
+            <button @click="deleteRow(entry)" >delete</button>
+        </td>
+        </tr>
+        <tr :entry="entry">
+            <td v-for="key in columns" >
+                <newcell-grid :edit=true :entry=newEntry :k="key"></newcell-grid>
+            </td>
+            <td>
+                <button @click="insertRow(entry)"  >insert</button>
+            </td>
         </tr>
       </tbody>
     </table>
   </script>
-
 
 <script type="text/x-template" id="cell-template">
     <div>
@@ -46,13 +57,19 @@
     </div>
   </script>
 
+  <script type="text/x-template" id="newcell-template">
+    <div>
+      <input ref="cellinput" type="text" v-model="cell">
+    </div>
+  </script>
+
 <!-- root element -->
 <div id="demo">
     <em>Lights</em>
     <grid :data="lightData" :columns="lightColumns">
     </grid>
     <em>Buttons</em>
-    <grid :data="gridData" :columns="gridColumns" :filter-key="searchQuery">
+    <grid :data="gridData" :columns="gridColumns" :filter-key="searchQuery" @update-data="fetchData">
     </grid>
     <em>Sequences</em>
     <grid :data="sequenceData" :columns="sequenceColumns">
@@ -89,7 +106,7 @@
                 this.error = this.post = null
                 this.loading = true
                 this.lightData = await fetchival('/lights').get();
-                this.gridData = await fetchival('/buttons').get();
+                this.gridData = await fetchival('/button').get();
                 this.sequenceData = await fetchival('/sequence').get();
             },
             exportCode: function (json) {
@@ -119,7 +136,7 @@ const Button buttons[] PROGMEM = {\n`;
         props: ['entry', 'k'],
         data: function () {
             return {
-                edit: false
+                edit: false,
             }
         },
         computed: {
@@ -147,6 +164,31 @@ const Button buttons[] PROGMEM = {\n`;
         }
     })
 
+    app.component('newcell-grid', {
+        template: '#newcell-template',
+        props: ['entry', 'k'],
+        data: function () {
+            return {
+                edit: false,
+            }
+        },
+        computed: {
+            cell: {
+                get: function () {
+                    console.log("get", this.entry[this.k])
+                    return this.entry[this.k]
+                },
+                set: function (newCellValue) {
+                    console.log("set", newCellValue)
+                    this.$emit('input', isNaN(newCellValue) ? newCellValue : parseInt(newCellValue))
+                }
+            }
+        },
+        methods: {
+
+        }
+    })
+
     app.component('grid', {
         template: '#grid-template',
         props: {
@@ -158,10 +200,11 @@ const Button buttons[] PROGMEM = {\n`;
             var sortOrders = {}
             this.columns.forEach(function (key) {
                 sortOrders[key] = 1
-            })
+            });
             return {
                 sortKey: '',
-                sortOrders: sortOrders
+                sortOrders: sortOrders,
+                newEntry: {}
             }
         },
         computed: {
@@ -202,6 +245,15 @@ const Button buttons[] PROGMEM = {\n`;
             },
             openModal: function () {
                 console.log("modal");
+            },
+            insertRow: function (a) {
+                console.log("insert");
+
+            },
+            deleteRow: async function (entry) {
+                console.log("delete");
+                await fetchival('/button/'+entry.id).delete();
+                this.$emit("update-data")
             }
         }
     })

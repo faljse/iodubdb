@@ -27,16 +27,21 @@ class Main {
             res.send("asdf");
         })
 
-         app.get('/buttons', async(req, res) => {
+         app.get('/button', async(req, res) => {
             res.type('json');
             let result = await db.prepare("select * from button order by id").all();
             res.send(result);
         })
 
+        app.delete('/button/:id', async(req, res) => {
+            res.type('json');
+            let result = await db.prepare("delete from button where id = ?").run(parseInt(req.params.id));
+            res.send(result);
+        })
+
         app.get('/scene/:sequence_id', async(req, res) => {
             res.type('json');
-            let sid = parseInt(req.params.sequence_id);
-            let result = await db.prepare(`select * from scene where sequence_id = ? order by id`).all(sid);
+            let result = await db.prepare(`select * from scene where sequence_id = ? order by id`).all(parseInt(req.params.sequence_id));
             res.send(result);
         })
 
