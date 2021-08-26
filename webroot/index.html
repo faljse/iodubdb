@@ -1,5 +1,5 @@
 <html>
-<link rel="stylesheet" href="main.css"/>
+<link rel="stylesheet" href="main.css" />
 <script src="js/fetchival.js"></script> <!-- https://github.com/typicode/fetchival -->
 <script src="js/vue.global.js"></script>
 
@@ -12,13 +12,13 @@
       <input ref="cellinput" type="text" v-show="edit == true" v-model="cell" @focus="focused" @blur="edit = false" @keyup.enter="edit == false">
     </div>
   </script>
-  <!-- Grid Component -->
-  <script type="text/x-template" id="grid-template">
+<!-- Grid Component -->
+<script type="text/x-template" id="grid-template">
     <table>
       <thead>
         <tr>
           <th v-for="key in columns" @click="sortBy(key)" :class="{ active: sortKey == key }">
-            {{ key | capitalize }}
+            {{ key }}
             <span class="arrow" :class="sortOrders[key] > 0 ? 'asc' : 'dsc'">
             </span>
           </th>
@@ -27,8 +27,7 @@
       <tbody>
         <tr v-for="entry in filteredData">
           <td v-for="key in columns">
-
-            <cell-grid v-if="key=='id'" :click="idClicked(this)" :entry="entry" :k="key"></cell-grid>
+            <label v-if="key=='id'" @click="openModal()"> <a href="#">{{ entry.id }}</a></label>
             <cell-grid v-else :entry="entry" :k="key"></cell-grid>
 
           </td>
@@ -38,7 +37,6 @@
   </script>
 
 
-  <!-- Modal Component -->
 <script type="text/x-template" id="cell-template">
     <div>
       <div v-show="edit == false">
@@ -47,14 +45,14 @@
       <input ref="cellinput" type="text" v-show="edit == true" v-model="cell" @click="" @focus="focused" @blur="edit = false" @keyup.enter="edit == false">
     </div>
   </script>
-  
-  <!-- root element -->
-  <div id="demo">
+
+<!-- root element -->
+<div id="demo">
     <em>Lights</em>
     <grid :data="lightData" :columns="lightColumns">
     </grid>
     <em>Buttons</em>
-    <grid :data="gridData" :columns="gridColumns" :filter-key="searchQuery" >
+    <grid :data="gridData" :columns="gridColumns" :filter-key="searchQuery">
     </grid>
     <em>Sequences</em>
     <grid :data="sequenceData" :columns="sequenceColumns">
@@ -65,146 +63,150 @@
     <div>
         Code
         <pre v-html="exportCode(gridData)"></pre>
-      </div>
-  </div>
+    </div>
+</div>
 
 <script>
-const app = Vue.createApp({
-  el: '#demo',
-  data: function() { 
-      return {
-        searchQuery: '',
-        gridColumns: ['id', 'name', 'input'],
-        gridData: [],
-        sequenceColumns: ['id', 'name'],
-        sequenceData: [],
-        lightColumns: ['id', 'name', 'type','offset'],
-        lightData: []
-        }
-    },
-    
-  created () {
+    const app = Vue.createApp({
+        el: '#demo',
+        data: function () {
+            return {
+                searchQuery: '',
+                gridColumns: ['id', 'name', 'input'],
+                gridData: [],
+                sequenceColumns: ['id', 'name'],
+                sequenceData: [],
+                lightColumns: ['id', 'name', 'type', 'offset'],
+                lightData: []
+            }
+        },
+
+        created() {
             this.fetchData()
-  },  
-  methods: {
-    async fetchData() {
+        },
+        methods: {
+            async fetchData() {
                 this.error = this.post = null
                 this.loading = true
                 this.lightData = await fetchival('/lights').get();
                 this.gridData = await fetchival('/buttons').get();
                 this.sequenceData = await fetchival('/sequence').get();
             },
-    exportCode: function(json) {
-        let p=
-`struct Button{
+            exportCode: function (json) {
+                let p =
+                    `struct Button{
   uint8_t id;
   uint8_t inputNr;
 };
 const Button buttons[] PROGMEM = {\n`;
-        json.forEach(function (value) {
-            console.log(value);
-            p+=`{ ${value.id}, ${value.input} },\n`
-        }); 
-        p+=`};\n\n`
-        p+=`for( const Foo &foo : bar ){
+                json.forEach(function (value) {
+                    console.log(value);
+                    p += `{ ${value.id}, ${value.input} },\n`
+                });
+                p += `};\n\n`
+                p += `for( const Foo &foo : bar ){
     Serial.print( pgm_read_byte( &foo.a ) );
     Serial.print( ", " );
     Serial.println( pgm_read_word( &foo.b ) );
 }`
-        return p;
-    },
-  }
-})
-
-app.component('cell-grid', {
-  template: '#cell-template',
-  props: ['entry', 'k'],
-  data: function() {
-    return {
-      edit: false
-    }
-  },
-  computed: {
-    cell: {
-      get: function() {
-        console.log("get", this.entry[this.k])
-        return this.entry[this.k]
-      },
-      set: function(newCellValue) {
-        console.log("set", newCellValue)
-        this.$emit('input', isNaN(newCellValue) ? newCellValue : parseInt(newCellValue))
-      }
-    }
-  },
-  methods: {
-  focused: function() {
-    console.log('focused')
-  },
-   editing: function() {
-			this.edit = true;
-      this.$nextTick(function () {
-        this.$refs.cellinput.focus()
-      })
-   }
-  }
-})
-
-app.component('grid', {
-  template: '#grid-template',
-  props: {
-    data: Array,
-    columns: Array,
-    filterKey: String
-  },
-  data: function() {
-    var sortOrders = {}
-    this.columns.forEach(function(key) {
-      sortOrders[key] = 1
+                return p;
+            },
+        }
     })
-    return {
-      sortKey: '',
-      sortOrders: sortOrders
-    }
-  },
-  computed: {
-    filteredData: function() {
-      var sortKey = this.sortKey
-      var filterKey = this.filterKey && this.filterKey.toLowerCase()
-      var order = this.sortOrders[sortKey] || 1
-      var data = this.data
-      if (filterKey) {
-        data = data.filter(function(row) {
-          return Object.keys(row).some(function(key) {
-            return String(row[key]).toLowerCase().indexOf(filterKey) > -1
-          })
-        })
-      }
-      if (sortKey) {
-        data = data.slice().sort(function(a, b) {
-          a = a[sortKey]
-          b = b[sortKey]
-          return (a === b ? 0 : a > b ? 1 : -1) * order
-        })
-      }
-      return data
-    }
-  },
-  filters: {
-    capitalize: function(str) {
-      return str.charAt(0).toUpperCase() + str.slice(1)
-    }
-  },
-  methods: {
-    idClicked: function(a) {
-    console.log(a);
-        },  
-    sortBy: function(key) {
-      this.sortKey = key
-      this.sortOrders[key] = this.sortOrders[key] * -1
-    }
-  }
-})
 
-app.mount('#demo');
+    app.component('cell-grid', {
+        template: '#cell-template',
+        props: ['entry', 'k'],
+        data: function () {
+            return {
+                edit: false
+            }
+        },
+        computed: {
+            cell: {
+                get: function () {
+                    console.log("get", this.entry[this.k])
+                    return this.entry[this.k]
+                },
+                set: function (newCellValue) {
+                    console.log("set", newCellValue)
+                    this.$emit('input', isNaN(newCellValue) ? newCellValue : parseInt(newCellValue))
+                }
+            }
+        },
+        methods: {
+            focused: function () {
+                console.log('focused')
+            },
+            editing: function () {
+                this.edit = true;
+                this.$nextTick(function () {
+                    this.$refs.cellinput.focus()
+                })
+            }
+        }
+    })
+
+    app.component('grid', {
+        template: '#grid-template',
+        props: {
+            data: Array,
+            columns: Array,
+            filterKey: String
+        },
+        data: function () {
+            var sortOrders = {}
+            this.columns.forEach(function (key) {
+                sortOrders[key] = 1
+            })
+            return {
+                sortKey: '',
+                sortOrders: sortOrders
+            }
+        },
+        computed: {
+            filteredData: function () {
+                var sortKey = this.sortKey
+                var filterKey = this.filterKey && this.filterKey.toLowerCase()
+                var order = this.sortOrders[sortKey] || 1
+                var data = this.data
+                if (filterKey) {
+                    data = data.filter(function (row) {
+                        return Object.keys(row).some(function (key) {
+                            return String(row[key]).toLowerCase().indexOf(filterKey) > -1
+                        })
+                    })
+                }
+                if (sortKey) {
+                    data = data.slice().sort(function (a, b) {
+                        a = a[sortKey]
+                        b = b[sortKey]
+                        return (a === b ? 0 : a > b ? 1 : -1) * order
+                    })
+                }
+                return data
+            }
+        },
+        filters: {
+            capitalize: function (str) {
+                return str.charAt(0).toUpperCase() + str.slice(1)
+            }
+        },
+        methods: {
+            idClicked: function (a) {
+                console.log(a);
+            },
+            sortBy: function (key) {
+                this.sortKey = key
+                this.sortOrders[key] = this.sortOrders[key] * -1
+            },
+            openModal: function () {
+                console.log("modal");
+            }
+        }
+    })
+
+    app.mount('#demo');
 </script>
+
 </html>
