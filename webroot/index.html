@@ -36,12 +36,12 @@
             <button @click="deleteRow(entry)" >delete</button>
         </td>
         </tr>
-        <tr :entry="entry">
+        <tr>
             <td v-for="key in columns" >
-                <newcell-grid :edit=true :entry=newEntry :k="key"></newcell-grid>
+                <cell-grid :edit=true :entry="newEntry"></cell-grid>
             </td>
             <td>
-                <button @click="insertRow(entry)"  >insert</button>
+                <button @click="insertRow()">insert</button>
             </td>
         </tr>
       </tbody>
@@ -142,8 +142,8 @@ const Button buttons[] PROGMEM = {\n`;
         computed: {
             cell: {
                 get: function () {
-                    console.log("get", this.entry[this.k])
-                    return this.entry[this.k]
+                        console.log("get", this.entry[this.k])
+                        return this.entry[this.k]
                 },
                 set: function (newCellValue) {
                     console.log("set", newCellValue)
@@ -163,32 +163,6 @@ const Button buttons[] PROGMEM = {\n`;
             }
         }
     })
-
-    app.component('newcell-grid', {
-        template: '#newcell-template',
-        props: ['entry', 'k'],
-        data: function () {
-            return {
-                edit: false,
-            }
-        },
-        computed: {
-            cell: {
-                get: function () {
-                    console.log("get", this.entry[this.k])
-                    return this.entry[this.k]
-                },
-                set: function (newCellValue) {
-                    console.log("set", newCellValue)
-                    this.$emit('input', isNaN(newCellValue) ? newCellValue : parseInt(newCellValue))
-                }
-            }
-        },
-        methods: {
-
-        }
-    })
-
     app.component('grid', {
         template: '#grid-template',
         props: {
@@ -197,14 +171,18 @@ const Button buttons[] PROGMEM = {\n`;
             filterKey: String
         },
         data: function () {
-            var sortOrders = {}
+            let sortOrders = {}
             this.columns.forEach(function (key) {
                 sortOrders[key] = 1
+            });
+            let newEntry = {}
+            this.columns.forEach(function (key) {
+                newEntry[key] = "(empty)"
             });
             return {
                 sortKey: '',
                 sortOrders: sortOrders,
-                newEntry: {}
+                newEntry: newEntry
             }
         },
         computed: {
