@@ -33,6 +33,12 @@ class Main {
             res.send(result);
         })
 
+        app.put('/button', async(req, res) => {
+            res.type('json');
+            let result = await db.prepare("insert into button(id, name, input) values(?,?,?)").run(req.body.id, req.body.name, req.body.input);
+            res.send(result);
+        })
+
         app.delete('/button/:id', async(req, res) => {
             res.type('json');
             let result = await db.prepare("delete from button where id = ?").run(parseInt(req.params.id));

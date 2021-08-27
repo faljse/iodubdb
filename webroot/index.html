@@ -38,10 +38,10 @@
         </tr>
         <tr>
             <td v-for="key in columns" >
-                <cell-grid :edit=true :entry="newEntry" :k="key"></cell-grid>
+                <cell-grid @input="setInput" :edit=true :entry="newEntry" :k="key"></cell-grid>
             </td>
             <td>
-                <button @click="insertRow()">insert</button>
+                <button @click="insertRow(entry)">insert</button>
             </td>
         </tr>
       </tbody>
@@ -147,7 +147,7 @@ const Button buttons[] PROGMEM = {\n`;
                 },
                 set: function (newCellValue) {
                     console.log("set", newCellValue)
-                    this.$emit('input', isNaN(newCellValue) ? newCellValue : parseInt(newCellValue))
+                    this.$emit('input', isNaN(newCellValue) ? newCellValue : parseInt(newCellValue), this.k)
                 }
             }
         },
@@ -224,14 +224,24 @@ const Button buttons[] PROGMEM = {\n`;
             openModal: function () {
                 console.log("modal");
             },
-            insertRow: function (a) {
+            insertRow: async function () {
                 console.log("insert");
+                await fetchival('/button/').put(this.newEntry);
+                this.$emit("update-data")
 
             },
             deleteRow: async function (entry) {
                 console.log("delete");
                 await fetchival('/button/'+entry.id).delete();
                 this.$emit("update-data")
+            },
+            setInput: function(value, key) {
+                console.log("setInput")
+                this.newEntry[key]=value;
+                console.log(this.newEntry)
+
+                this.$emit("update-data")
+
             }
         }
     })
