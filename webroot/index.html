@@ -38,7 +38,7 @@
         </tr>
         <tr>
             <td v-for="key in columns" >
-                <cell-grid :edit=true :entry="newEntry"></cell-grid>
+                <cell-grid :edit=true :entry="newEntry" :k="key"></cell-grid>
             </td>
             <td>
                 <button @click="insertRow()">insert</button>
