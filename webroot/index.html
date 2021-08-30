@@ -249,6 +249,8 @@ const Button buttons[] PROGMEM = {\n`;
             updateValue: async function(id, key, value) {
                 console.log("updateValue")
                 await fetchival('/button/'+id).patch({'field': key, 'value': value});
+                this.$emit("update-data")
+
             }
         }
     })
