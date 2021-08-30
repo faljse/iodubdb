@@ -30,7 +30,7 @@
         <tr v-for="entry in filteredData">
           <td v-for="key in columns">
             <label v-if="key=='id'" @click="openModal()"> <a href="#">{{ entry.id }}</a></label>
-            <cell-grid v-else :entry="entry" :k="key"></cell-grid>
+            <cell-grid v-else @inputIdKey="updateValue" :entry="entry" :k="key"></cell-grid>
           </td>
           <td>
             <button @click="deleteRow(entry)" >delete</button>
@@ -147,7 +147,7 @@ const Button buttons[] PROGMEM = {\n`;
                 },
                 set: function (newCellValue) {
                     console.log("set", newCellValue)
-                    this.$emit('input', isNaN(newCellValue) ? newCellValue : parseInt(newCellValue), this.k)
+                    this.$emit('inputIdKey', this.entry.id, this.k, isNaN(newCellValue) ? newCellValue : parseInt(newCellValue))
                 }
             }
         },
@@ -177,7 +177,10 @@ const Button buttons[] PROGMEM = {\n`;
             });
             let newEntry = {}
             this.columns.forEach(function (key) {
-                newEntry[key] = "(empty)"
+                if(key=="id")
+                    newEntry[key]="min()";
+                else
+                 newEntry[key] = "(empty)"
             });
             return {
                 sortKey: '',
@@ -235,13 +238,17 @@ const Button buttons[] PROGMEM = {\n`;
                 await fetchival('/button/'+entry.id).delete();
                 this.$emit("update-data")
             },
-            setInput: function(value, key) {
+            setInput: function(id, key, value) {
                 console.log("setInput")
                 this.newEntry[key]=value;
                 console.log(this.newEntry)
 
                 this.$emit("update-data")
 
+            },
+            updateValue: async function(id, key, value) {
+                console.log("updateValue")
+                await fetchival('/button/'+id).patch({'field': key, 'value': value});
             }
         }
     })

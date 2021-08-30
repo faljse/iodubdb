@@ -39,6 +39,15 @@ class Main {
             res.send(result);
         })
 
+        app.patch('/button/:id', async(req, res) => {
+            res.type('json');
+            console.log("asdf")
+            console.log("a" + req.body.field +"b");
+            let result = await db.prepare(`update button set ${req.body.field} = ? WHERE id=?`).run(req.body.value, req.params.id);
+            res.send(result);
+        })
+
+
         app.delete('/button/:id', async(req, res) => {
             res.type('json');
             let result = await db.prepare("delete from button where id = ?").run(parseInt(req.params.id));
