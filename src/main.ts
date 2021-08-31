@@ -35,7 +35,21 @@ class Main {
 
         app.put('/button', async(req, res) => {
             res.type('json');
-            let result = await db.prepare("insert into button(id, name, input) values(?,?,?)").run(req.body.id, req.body.name, req.body.input);
+            let ids=[];
+            let nextID=1;
+            let idstmt=await db.prepare("select id from button order by id");
+            for (const id of idstmt.iterate()) {
+                ids.push(id.id);
+            }
+            for(let i=1;i<256;i++) {
+                if(ids.indexOf(i)==-1) {
+                    nextID=i;
+                    break;
+                }
+
+                
+            }
+            let result = await db.prepare("insert into button(id, name, input) values(?,?,?)").run(nextID, req.body.name, req.body.input);
             res.send(result);
         })
 
