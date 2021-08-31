@@ -49,9 +49,9 @@
   </script>
 
 <script type="text/x-template" id="cell-template">
-    <div>
-      <div v-show="edit == false">
-        <label @dblclick="editing"> {{ cell }}</label>
+    <div >
+      <div v-show="edit == false" @dblclick="editing" >
+        <label> {{ cell }} &nbsp;</label>
       </div>
       <input ref="cellinput" type="text" v-show="edit == true" v-model="cell" @click="" @focus="focused" @blur="edit = false" @keyup.enter="edit == false">
     </div>
@@ -69,7 +69,7 @@
     <grid :data="lightData" :columns="lightColumns">
     </grid>
     <em>Buttons</em>
-    <grid :data="gridData" :columns="gridColumns" :filter-key="searchQuery" @update-data="fetchData">
+    <grid :data="buttonData" :columns="buttonColumns" :filter-key="searchQuery" @update-data="fetchData">
     </grid>
     <em>Sequences</em>
     <grid :data="sequenceData" :columns="sequenceColumns">
@@ -89,8 +89,8 @@
         data: function () {
             return {
                 searchQuery: '',
-                gridColumns: ['id', 'name', 'input'],
-                gridData: [],
+                buttonColumns: ['id', 'name', 'input', 'sequence_a', 'sequence_b', 'sequence_c', 'sequence_d'],
+                buttonData: [],
                 sequenceColumns: ['id', 'name'],
                 sequenceData: [],
                 lightColumns: ['id', 'name', 'type', 'offset'],
@@ -106,27 +106,12 @@
                 this.error = this.post = null
                 this.loading = true
                 this.lightData = await fetchival('/lights').get();
-                this.gridData = await fetchival('/button').get();
+                this.buttonData = await fetchival('/button').get();
                 this.sequenceData = await fetchival('/sequence').get();
             },
             exportCode: function (json) {
-                let p =
-                    `struct Button{
-  uint8_t id;
-  uint8_t inputNr;
-};
-const Button buttons[] PROGMEM = {\n`;
-                json.forEach(function (value) {
-                    console.log(value);
-                    p += `{ ${value.id}, ${value.input} },\n`
-                });
-                p += `};\n\n`
-                p += `for( const Foo &foo : bar ){
-    Serial.print( pgm_read_byte( &foo.a ) );
-    Serial.print( ", " );
-    Serial.println( pgm_read_word( &foo.b ) );
-}`
-                return p;
+              
+               // return p;
             },
         }
     })
