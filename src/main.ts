@@ -49,7 +49,8 @@ class Main {
 
                 
             }
-            let result = await db.prepare("insert into button(id, name, input) values(?,?,?)").run(nextID, req.body.name, req.body.input);
+            let result = await db.prepare("insert into button(id, name, input, sequence_a, sequence_b, sequence_c, sequence_d) values(?,?,?,?,?,?,?)")
+                .run(nextID, req.body.name, req.body.input, req.body.sequence_a, req.body.sequence_b, req.body.sequence_c, req.body.sequence_d);
             res.send(result);
         })
 

@@ -4,6 +4,36 @@
 <script src="js/vue.global.js"></script>
 
 <!-- Cell Component -->
+<script type="text/x-template" id="modal-template">
+    <transition name="fade">
+      <div class="modal" v-if="show">
+        <div class="modal__backdrop" @click="closeModal()"/>
+  
+        <div class="modal__dialog">
+          <div class="modal__header">
+            <slot name="header"/>
+            <button type="button" class="modal__close" @click="closeModal()">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 352 512">
+                <path
+                  fill="currentColor"
+                  d="M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z"
+                ></path>
+              </svg>
+            </button>
+          </div>
+  
+          <div class="modal__body">
+            <slot name="body"/>
+          </div>
+  
+          <div class="modal__footer">
+            <slot name="footer"/>
+          </div>
+        </div>
+      </div>
+    </transition>
+</script>
+<!-- Cell Component -->
 <script type="text/x-template" id="cell-template">
     <div>
       <div v-show="edit == false">
@@ -14,6 +44,7 @@
   </script>
 <!-- Grid Component -->
 <script type="text/x-template" id="grid-template">
+    <modal ref="myModal"></modal>
     <table>
       <thead>
         <tr>
@@ -29,7 +60,7 @@
       <tbody>
         <tr v-for="entry in filteredData">
           <td v-for="key in columns">
-            <label v-if="key=='id'" @click="openModal()"> <a href="#">{{ entry.id }}</a></label>
+            <label v-if="key=='id'" @click="$refs.myModal.openModal()"> <a href="#">{{ entry.id }}</a></label>
             <cell-grid v-else @inputIdKey="updateValue" :entry="entry" :k="key"></cell-grid>
           </td>
           <td>
@@ -38,20 +69,20 @@
         </tr>
         <tr>
             <td v-for="key in columns" >
-                <cell-grid @input="setInput" :edit=true :entry="newEntry" :k="key"></cell-grid>
+                <cell-grid @inputIdKey="setInput" :edit=true :entry="newEntry" :k="key"></cell-grid>
             </td>
             <td>
                 <button @click="insertRow(entry)">insert</button>
             </td>
         </tr>
-      </tbody>
+      </tbody>  
     </table>
   </script>
 
 <script type="text/x-template" id="cell-template">
     <div >
       <div v-show="edit == false" @dblclick="editing" >
-        <label> {{ cell }} &nbsp;</label>
+        <label> {{ cell }} </label>
       </div>
       <input ref="cellinput" type="text" v-show="edit == true" v-model="cell" @click="" @focus="focused" @blur="edit = false" @keyup.enter="edit == false">
     </div>
@@ -66,20 +97,22 @@
 <!-- root element -->
 <div id="demo">
     <em>Lights</em>
-    <grid :data="lightData" :columns="lightColumns">
+    <grid :data="configData.lightData" :columns="lightColumns">
     </grid>
     <em>Buttons</em>
-    <grid :data="buttonData" :columns="buttonColumns" :filter-key="searchQuery" @update-data="fetchData">
+    <grid :data="configData.buttonData" :columns="buttonColumns" :filter-key="searchQuery" @delete-row="deleteButtonRow" @insert-row="insertButtonRow">
     </grid>
     <em>Sequences</em>
-    <grid :data="sequenceData" :columns="sequenceColumns">
+    <grid :data="configData.sequenceData" :columns="sequenceColumns">
     </grid>
     <p>
         <em>[Double Click to edit the cell data]</em>
     </p>
+    <button @click="saveData()" >save</button>
+
     <div>
         Code
-        <pre v-html="exportCode(gridData)"></pre>
+        <pre v-html="exportCode(this.buttonData)"></pre>
     </div>
 </div>
 
@@ -99,7 +132,7 @@
         },
 
         created() {
-            this.fetchData()
+            this.loadData()
         },
         methods: {
             async fetchData() {
@@ -109,10 +142,61 @@
                 this.buttonData = await fetchival('/button').get();
                 this.sequenceData = await fetchival('/sequence').get();
             },
-            exportCode: function (json) {
-              
-               // return p;
+            async deleteButtonRow(id) {
+                this.$data.configData.buttonData = this.$data.configData.buttonData.filter(item => item.id !== id);
             },
+            async insertButtonRow(item) {
+                this.$data.buttonData.push(item);
+            },
+            async saveData() {
+                let configData={'lightData':this.lightData,
+                                 'buttonData':this.buttonData,
+                                 'sequenceData':this.sequenceData};
+                window.localStorage.setItem("configData", JSON.stringify(configData));
+
+            },
+            async loadData() {
+                this.$data.configData = JSON.parse(window.localStorage.getItem("configData"));
+            },
+            exportCode() {
+                let code=`struct ButtonS{
+    uint8_t id;
+    uint8_t inputNr;
+    uint8_t sequence_A;
+    uint8_t sequence_B;
+    uint8_t sequence_C;
+    uint8_t sequence_D;
+
+};\n\n`
+
+                code+=`struct ButtonS PROGMEM const mystruct[] = {\n`;
+
+              for(let i=0;i<this.buttonData.length;i++) {
+                  let button=this.buttonData[i];
+                  code+=`{ ${button.id}, ${button.input}, ${button.sequence_a}, ${button.sequence_b}, ${button.sequence_c}, ${button.sequence_d} },\n`
+              }
+              code+=`};\n`;
+              return code;
+            },
+        }
+    })
+
+    app.component('modal', {
+        template: '#modal-template',
+        data: function () {
+            return {
+                show: false,
+            }
+        },
+        methods: {
+            closeModal() {
+                this.show = false;
+                document.querySelector("body").classList.remove("overflow-hidden");
+                },
+            openModal() {
+                this.show = true;
+                document.querySelector("body").classList.add("overflow-hidden");
+            }
         }
     })
 
@@ -163,9 +247,9 @@
             let newEntry = {}
             this.columns.forEach(function (key) {
                 if(key=="id")
-                    newEntry[key]="min()";
+                    newEntry[key]="(auto)";
                 else
-                 newEntry[key] = "(empty)"
+                 newEntry[key] = ""
             });
             return {
                 sortKey: '',
@@ -214,14 +298,11 @@
             },
             insertRow: async function () {
                 console.log("insert");
-                await fetchival('/button/').put(this.newEntry);
-                this.$emit("update-data")
-
+                this.$emit("insert-row", this.newEntry);
             },
             deleteRow: async function (entry) {
                 console.log("delete");
-                await fetchival('/button/'+entry.id).delete();
-                this.$emit("update-data")
+                this.$emit("delete-row", entry.id);
             },
             setInput: function(id, key, value) {
                 console.log("setInput")
